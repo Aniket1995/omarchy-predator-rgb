@@ -2,7 +2,9 @@
 
 A native, first-class **Omarchy (Quickshell)** bar widget and interactive 4-Zone RGB control center for **Acer Predator Helios 300 (PH315-52)** and related Acer Predator gaming laptops.
 
-Created with ❤️ by **Aniket B. (@aniketb)**.
+Created with ❤️ by **Aniket B. ([@Aniket1995](https://github.com/Aniket1995))**.
+
+![Predator RGB Preview](preview.png)
 
 ---
 
@@ -30,12 +32,22 @@ Created with ❤️ by **Aniket B. (@aniketb)**.
 Install directly with Omarchy's plugin manager:
 
 ```bash
-omarchy plugin add https://github.com/aniketb/omarchy-predator-rgb.git --enable
+omarchy plugin add https://github.com/Aniket1995/omarchy-predator-rgb.git --enable
 ```
 
 To update in the future:
 ```bash
 omarchy plugin update predator-rgb
+```
+
+---
+
+## 🗑️ Removal
+
+To disable and remove the plugin from Omarchy:
+
+```bash
+omarchy plugin remove predator-rgb
 ```
 
 ---
