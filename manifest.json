@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "predator-rgb",
+  "name": "Predator RGB",
+  "version": "1.0.0",
+  "author": "aniketb",
+  "description": "4-Zone RGB Keyboard Backlight Control for Acer Predator laptops",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Predator RGB",
+    "description": "4-Zone RGB Keyboard Backlight Control for Acer Predator",
+    "category": "Hardware",
+    "defaultSection": "right",
+    "allowMultiple": false
+  }
+}

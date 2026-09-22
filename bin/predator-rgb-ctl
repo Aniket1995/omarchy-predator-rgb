@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""
+predator-rgb-ctl: High-performance controller for Acer Predator Helios 300 4-zone RGB keyboard.
+Interacts directly with /dev/acer-gkbbl-0 and /dev/acer-gkbbl-static-0.
+"""
+
+import sys
+import os
+import json
+from pathlib import Path
+
+DEV_DYNAMIC = "/dev/acer-gkbbl-0"
+DEV_STATIC = "/dev/acer-gkbbl-static-0"
+
+CONFIG_DIR = Path.home() / ".config" / "predator"
+STATE_FILE = CONFIG_DIR / "rgb_state.json"
+PROFILES_DIR = CONFIG_DIR / "saved profiles"
+
+DEFAULT_STATE = {
+    "power": True,
+    "mode": 3,           # 0=Static, 1=Breath, 2=Neon, 3=Wave, 4=Shifting, 5=Zoom
+    "speed": 5,          # 0-9
+    "brightness": 100,   # 0-100
+    "direction": 1,      # 1=Right to Left, 2=Left to Right
+    "color": [0, 229, 255], # [R, G, B]
+    "zones": {
+        "1": [0, 229, 255],
+        "2": [0, 229, 255],
+        "3": [0, 229, 255],
+        "4": [0, 229, 255]
+    }
+}
+
+def load_state():
+    try:
+        if STATE_FILE.exists():
+            with open(STATE_FILE, "r") as f:
+                data = json.load(f)
+                state = DEFAULT_STATE.copy()
+                state.update(data)
+                return state
+    except Exception:
+        pass
+    return DEFAULT_STATE.copy()
+
+def save_state(state):
+    try:
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        with open(STATE_FILE, "w") as f:
+            json.dump(state, f, indent=2)
+    except Exception as e:
+        sys.stderr.write(f"Error saving state: {e}\n")
+
+def apply_hardware(state):
+    power = state.get("power", True)
+    mode = int(state.get("mode", 3))
+    speed = max(0, min(9, int(state.get("speed", 5))))
+    brightness = max(0, min(100, int(state.get("brightness", 100))))
+    effective_brightness = brightness if power else 0
+    direction = int(state.get("direction", 1))
+    color = state.get("color", [0, 229, 255])
+
+    if mode == 0:
+        # Static mode: configure all 4 zones
+        zones = state.get("zones", DEFAULT_STATE["zones"])
+        try:
+            with open(DEV_STATIC, "wb") as dev_s:
+                for z_id in range(1, 5):
+                    z_color = zones.get(str(z_id), color)
+                    payload_s = [0] * 4
+                    payload_s[0] = 1 << (z_id - 1)
+                    payload_s[1] = max(0, min(255, int(z_color[0])))
+                    payload_s[2] = max(0, min(255, int(z_color[1])))
+                    payload_s[3] = max(0, min(255, int(z_color[2])))
+                    dev_s.write(bytes(payload_s))
+                    dev_s.flush()
+        except Exception as e:
+            sys.stderr.write(f"Warning writing to {DEV_STATIC}: {e}\n")
+
+        # Tell WMI to use static mode with brightness
+        try:
+            with open(DEV_DYNAMIC, "wb") as dev_d:
+                payload_d = [0] * 16
+                payload_d[2] = effective_brightness
+                payload_d[9] = 1
+                dev_d.write(bytes(payload_d))
+                dev_d.flush()
+        except Exception as e:
+            sys.stderr.write(f"Warning writing to {DEV_DYNAMIC}: {e}\n")
+
+    else:
+        # Dynamic modes: 1=Breath, 2=Neon, 3=Wave, 4=Shifting, 5=Zoom
+        try:
+            with open(DEV_DYNAMIC, "wb") as dev_d:
+                payload = [0] * 16
+                payload[0] = mode
+                payload[1] = speed
+                payload[2] = effective_brightness
+                payload[3] = 8 if mode == 3 else 0
+                payload[4] = direction
+                payload[5] = max(0, min(255, int(color[0])))
+                payload[6] = max(0, min(255, int(color[1])))
+                payload[7] = max(0, min(255, int(color[2])))
+                payload[9] = 1
+                dev_d.write(bytes(payload))
+                dev_d.flush()
+        except Exception as e:
+            sys.stderr.write(f"Warning writing to {DEV_DYNAMIC}: {e}\n")
+
+def main():
+    state = load_state()
+
+    if len(sys.argv) < 2 or sys.argv[1] in ("--status", "status"):
+        print(json.dumps(state, indent=2))
+        return
+
+    cmd = sys.argv[1]
+
+    if cmd == "--apply-json" and len(sys.argv) > 2:
+        try:
+            new_state = json.loads(sys.argv[2])
+            state.update(new_state)
+        except Exception as e:
+            sys.stderr.write(f"Invalid JSON: {e}\n")
+            sys.exit(1)
+
+    elif cmd == "--set-mode" and len(sys.argv) > 2:
+        state["mode"] = int(sys.argv[2])
+
+    elif cmd == "--set-brightness" and len(sys.argv) > 2:
+        state["brightness"] = int(sys.argv[2])
+        if state["brightness"] > 0:
+            state["power"] = True
+
+    elif cmd == "--set-speed" and len(sys.argv) > 2:
+        state["speed"] = int(sys.argv[2])
+
+    elif cmd == "--set-direction" and len(sys.argv) > 2:
+        state["direction"] = int(sys.argv[2])
+
+    elif cmd == "--set-color" and len(sys.argv) >= 5:
+        r, g, b = int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
+        state["color"] = [r, g, b]
+
+    elif cmd == "--set-zone" and len(sys.argv) >= 6:
+        z = str(sys.argv[2])
+        r, g, b = int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])
+        if "zones" not in state:
+            state["zones"] = {}
+        state["zones"][z] = [r, g, b]
+        state["mode"] = 0
+
+    elif cmd == "--set-all-zones" and len(sys.argv) >= 5:
+        r, g, b = int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
+        state["color"] = [r, g, b]
+        state["zones"] = {str(i): [r, g, b] for i in range(1, 5)}
+        state["mode"] = 0
+
+    elif cmd == "--toggle-power":
+        state["power"] = not state.get("power", True)
+
+    elif cmd == "--preset" and len(sys.argv) > 2:
+        name = sys.argv[2].lower()
+        if name in ("wave", "rainbow"):
+            state["mode"] = 3
+            state["speed"] = 5
+            state["power"] = True
+        elif name == "neon":
+            state["mode"] = 2
+            state["speed"] = 4
+            state["power"] = True
+        elif name in ("predator", "cyan"):
+            state["mode"] = 0
+            state["color"] = [0, 229, 255]
+            state["zones"] = {str(i): [0, 229, 255] for i in range(1, 5)}
+            state["power"] = True
+        elif name in ("turbo", "red"):
+            state["mode"] = 0
+            state["color"] = [255, 30, 60]
+            state["zones"] = {str(i): [255, 30, 60] for i in range(1, 5)}
+            state["power"] = True
+        elif name in ("breathe_cyan", "breathe"):
+            state["mode"] = 1
+            state["color"] = [0, 229, 255]
+            state["speed"] = 4
+            state["power"] = True
+        elif name in ("off", "stealth"):
+            state["power"] = False
+
+    apply_hardware(state)
+    save_state(state)
+    print(json.dumps(state))
+
+if __name__ == "__main__":
+    main()
