@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/predator_rgb_logo.png" width="130" alt="Predator RGB Logo" />
+</p>
+
 # Omarchy Predator RGB Keyboard Plugin (`predator-rgb`)
 
 A native, first-class **Omarchy (Quickshell)** bar widget and interactive 4-Zone RGB control center for **Acer Predator Helios 300 (PH315-52)** and related Acer Predator gaming laptops.
@@ -10,9 +14,10 @@ Created with ❤️ by **Aniket B. ([@Aniket1995](https://github.com/Aniket1995)
 
 ## ✨ Features
 
-- **Status Bar Keyboard Widget:** Sleek keyboard icon (``) on the top bar with active backlight status indicator dot.
+- **Status Bar 4-Zone Emblem Widget:** Custom 4-zone spectrum Predator emblem on the top bar with active backlight status indicator line and dynamic sleep dimming.
   - **Left-Click:** Opens the full RGB Control Center popup.
   - **Right-Click:** Instantly toggles keyboard backlight ON/OFF without opening the panel.
+- **Predator Hero Header:** Sleek 4-zone hardware badge, razor-sharp high-resolution Predator wordmark, and live status subtitle displaying the active profile or hardware sleep.
 - **Interactive 4-Zone Keyboard Visualizer:** Real-time mini graphic previewing WASD, Mid-Left, Mid-Right, and Numpad zone colors and smooth wave simulations. Click any zone to immediately style it.
 - **All 6 Supported Hardware Modes:**
   1. **Static 4-Zone:** Independent custom RGB color control per zone or synchronized across all zones.

@@ -25,8 +25,7 @@ Panel {
   property int selectedZone: 1 // 1..4 or 0 for All
   property var zoneColors: ({ "1": "#00e5ff", "2": "#00e5ff", "3": "#00e5ff", "4": "#00e5ff" })
 
-  readonly property string pluginDir: Quickshell.env("HOME") + "/.config/omarchy/plugins/local.predator-rgb"
-  readonly property string ctlScript: pluginDir + "/bin/predator-rgb-ctl"
+  readonly property string ctlScript: Qt.resolvedUrl("bin/predator-rgb-ctl").toString().replace(/^file:\/\//, "")
 
   function getZoneColor(z) {
     var key = String(z);
@@ -166,12 +165,16 @@ Panel {
       Item {
         anchors.fill: parent
 
-        Text {
+        Image {
+          id: barLogo
           anchors.centerIn: parent
-          text: "\uf11c" // Keyboard glyph
-          font.family: root.bar ? root.bar.fontFamily : Style.font.family
-          font.pixelSize: Style.bar.iconSize
-          color: root.power ? (root.bar ? root.bar.foreground : Color.foreground) : Qt.darker(Color.foreground, 2.2)
+          width: Style.space(16)
+          height: Style.space(16)
+          source: Qt.resolvedUrl("assets/predator_rgb_bar_24.png")
+          fillMode: Image.PreserveAspectFit
+          smooth: true
+          mipmap: true
+          opacity: root.power ? 1.0 : 0.35
         }
 
         // Active color indicator dot
@@ -220,38 +223,9 @@ Panel {
         anchors.top: parent.top
         spacing: Style.space(12)
 
-        // 1. Popup Hero Title
-        Row {
-          anchors.horizontalCenter: parent.horizontalCenter
-          spacing: Style.space(8)
-
-          Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: "\uf11c"
-            font.family: root.bar ? root.bar.fontFamily : Style.font.family
-            font.pixelSize: Style.font.title + Style.space(2)
-            color: root.power ? Color.accent : Qt.darker(Color.foreground, 1.8)
-          }
-
-          Column {
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: Style.space(1)
-
-            Text {
-              text: "PREDATOR RGB LIGHTING"
-              font.family: root.bar ? root.bar.fontFamily : Style.font.family
-              font.pixelSize: Style.font.title - Style.space(2)
-              font.bold: true
-              color: root.bar ? root.bar.foreground : Color.foreground
-            }
-
-            Text {
-              text: "4-Zone Dynamic Hardware Backlight"
-              font.family: root.bar ? root.bar.fontFamily : Style.font.family
-              font.pixelSize: Style.font.caption - Style.space(1)
-              color: Qt.darker(root.bar ? root.bar.foreground : Color.foreground, 1.5)
-            }
-          }
+        // 1. Popup Hero Title & 4-Zone Logo
+        RgbHero {
+          panelRoot: root
         }
 
         PanelSeparator { width: parent.width }
